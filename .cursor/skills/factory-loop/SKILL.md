@@ -107,7 +107,8 @@ For any ticket that adds or changes a **product feature**, **app**, or **multi-f
 
 ### 2. Plan
 
-- Post **`**Plan:**`** on the issue: scope, files/folders, steps, test/verify approach, out-of-scope.
+- Post **`**Plan:**`** on the issue: scope, files/folders, steps, test/verify
+  approach, key test scenarios and regression risks, out-of-scope.
 - In chat, present the same plan and ask for approval.
 
 ### 3. Approval gate (hard stop)
@@ -131,6 +132,11 @@ Procedure:
 
 - **Branch first:** after approval, `git switch -c factory/issue-<n>-<short-slug>` from an up-to-date default branch. Never build ticket work directly on `main`/`master`.
 - Implement under the path the ticket names (e.g. `todo/`). Match repo conventions. Non-destructive changes only.
+- Read the `test-scenarios` skill. Create or update
+  `docs/test-scenarios/<feature>.md` alongside the code, mapping requirements to
+  happy-path, validation, boundary, security, data/integration, and regression
+  scenarios. Flag unresolved assumptions instead of inventing business rules.
+- Add automated tests only when a suitable test framework already exists.
 
 ### 5. Verify (browser)
 
@@ -138,11 +144,13 @@ Procedure:
 - **Run the app first:** start a static server in the project folder (`python -m http.server <port>` in a background shell), confirm HTTP 200, then open it **side by side** (`browser_navigate` with `position: "side"`, reuse the existing `viewId` from `browser_tabs` if a tab exists). Do not claim "verified" without a running app.
 - Exercise every flow named in the ticket; save screenshots to the temp path the tool returns, then copy into the repo.
 - Save screenshots under `docs/screenshots/issue-<n>/` (descriptive names, e.g. `01-create-task.png`).
+- Update the feature's scenario statuses after verification. `Passed` requires
+  local evidence; documentation alone never counts as a pass.
 
 ### 6. Deliver via pull request
 
 1. **Commit + push the feature branch** (deliverables + screenshots). Never push straight to `main`/`master`.
-2. **Open a PR** into the default branch (`gh pr create --base <default> --head <branch>`): the title references the ticket. Use `Refs #<n>` in the body — never `Closes #<n>` / `Fixes #<n>`, which would auto-close the ticket on merge. Include summary, how to run, test plan, screenshot links.
+2. **Open a PR** into the default branch (`gh pr create --base <default> --head <branch>`): the title references the ticket. Use `Refs #<n>` in the body — never `Closes #<n>` / `Fixes #<n>`, which would auto-close the ticket on merge. Include summary, how to run, test plan, the feature scenario document, and screenshot links.
 3. Post the ticket comment (ends with `<!-- factory-loop -->`):
 
 ```text
@@ -151,6 +159,8 @@ Procedure:
 **Delivered:** PR #<pr> on branch `<branch>` — <paths, how to run>
 
 **Verified:** <what you tested in the browser>
+
+**Test scenarios:** <branch link to docs/test-scenarios/<feature>.md>
 
 **Screenshots:**
 ![create task](https://github.com/<owner>/<repo>/blob/<branch>/docs/screenshots/issue-<n>/01-create-task.png)
