@@ -1,10 +1,9 @@
 ---
 name: factory-loop
 description: >-
-  Run recurring local agent loops with standardized sentinels, Windows PowerShell
-  wiring, brief tick replies, clean stop, and optional GitHub issue fetch/answer/comment.
-  Use when the user mentions factory-loop, timed heartbeats with payloads, or ticket
-  factories on a /loop schedule.
+  Run recurring local agent loops with ticket execute-and-deliver (files/projects),
+  safe non-destructive actions, GitHub comments, JSONL logging, and auto commit/push
+  on agent stop. Use for factory-loop, /loop ticket factories, or workshop issue automation.
 disable-model-invocation: true
 ---
 
@@ -34,12 +33,14 @@ Payload on the same line as JSON: `{"prompt":"<literal prompt for each tick>"}`.
 4. Start background shell with `block_until_ms: 0` and `notify_on_output` on the tick regex.
 5. **Track the shell PID** for stop.
 6. Confirm: interval, prompt already ran once, approximate first tick time, PID, and that the user can say **stop the loop**.
+7. Create **`.cursor/factory-loop-active`** (enables stop-hook commit/push). Remove that file when the user stops the loop.
 
 ### PowerShell (Windows)
 
 ```powershell
 while ($true) {
   Start-Sleep -Seconds <seconds>
+  powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/log-loop-tick.ps1 -Prompt "<prompt>"
   Write-Output 'AGENT_LOOP_TICK_<purpose> {"prompt":"<prompt>"}'
 }
 ```
@@ -61,6 +62,18 @@ done
 2. Keep the user message **brief** (one or two lines unless the prompt requires more).
 3. If the system says to "briefly inform the user about the task result", that means run the tick prompt — not meta-commentary about the loop machinery.
 
+### Ticket factory on ticks (required when prompt says so)
+
+If the loop prompt includes **ticket factory**, **post answers**, **factory-loop**, or GitHub work:
+
+1. `gh auth status` — use **SadiaMazhar-000** (or workshop assignee) if EMU blocks writes.
+2. List open issues on the workspace repo (`git remote -v`).
+3. Pick **one** open issue per tick (lowest number not fully **Delivered**), unless the user asked to batch.
+4. Run the **build pipeline** (below) for feature/project tickets; use **Execute** for simple Q&A or tiny docs-only tickets.
+5. End the agent turn so the **`stop`** hook can commit/push (screenshots must be committed before the final ticket comment links them).
+
+Do **not** stop at open-issue counts only; monitoring without execute + comment is not ticket factory.
+
 ### Timestamp heartbeat pattern
 
 When the prompt includes time (session pattern):
@@ -77,8 +90,83 @@ User-facing line example:
 
 1. Kill the tracked loop PID: `Stop-Process -Id <pid> -Force` or `taskkill /PID <pid> /F`.
 2. Verify the process is gone; terminal may show `status: failed` and exit `4294967295` — **expected** after force kill.
-3. Do not arm another wake or restart unless the user asks.
-4. If a shell **completion** notification arrives after a user-requested stop, one short acknowledgment is enough; do not treat it as a new tick.
+3. Delete **`.cursor/factory-loop-active`**.
+4. If the repo has uncommitted deliverables, run **Finalize git** (below) once before acknowledging loop stop.
+5. Do not arm another wake or restart unless the user asks.
+6. If a shell **completion** notification arrives after a user-requested stop, one short acknowledgment is enough; do not treat it as a new tick.
+
+## Build pipeline (features & projects)
+
+For any ticket that adds or changes a **product feature**, **app**, or **multi-file project** — follow this order. Do **not** skip to code on ambiguous tickets.
+
+### 1. Clarify
+
+- Read the issue and existing comments.
+- Post **`**Clarifying questions:**`** on the issue **or** use **AskQuestion** in chat when the user is present.
+- List assumptions (stack, scope, UX, data model, folder). Do not guess silently.
+
+### 2. Plan
+
+- Post **`**Plan:**`** on the issue: scope, files/folders, steps, test/verify approach, out-of-scope.
+- In chat, present the same plan and ask for approval.
+
+### 3. Approval gate
+
+- **Do not build** until the user approves in chat **or** a comment contains **`**Plan approved:**`** (or explicit “go ahead” on that issue).
+- On loop ticks: if only **Plan** exists and no approval, stop after plan/questions for that tick — no implementation.
+
+### 4. Build
+
+- Implement under the path the ticket names (e.g. `todo/`). Match repo conventions. Non-destructive changes only.
+
+### 5. Verify (browser)
+
+- Read the **chrome-devtools** skill (`$3` / DevTools MCP). Prefer **Chrome DevTools MCP** (`navigate_page`, `take_snapshot`, `take_screenshot`) or **cursor-ide-browser** if that is what is connected.
+- Serve or open the app (`file://` or local static server if needed), exercise create/update/delete flows from the ticket.
+- Save screenshots under `docs/screenshots/issue-<n>/` (descriptive names, e.g. `01-create-task.png`).
+
+### 6. Deliver (ticket + images)
+
+1. **Commit + push** deliverables and screenshots (Finalize git).
+2. Post comment:
+
+```text
+**Answer:** <summary of what was built>
+
+**Delivered:** <paths, how to run>
+
+**Verified:** <what you tested in the browser>
+
+**Screenshots:**
+![create task](https://github.com/<owner>/<repo>/blob/main/docs/screenshots/issue-<n>/01-create-task.png)
+```
+
+Use real `owner/repo` from `git remote`. After push, `blob/main` URLs render on the issue.
+
+(Omit in-progress emoji when fully delivered.)
+
+## Execute (non-feature tickets)
+
+| Ticket type | Action |
+|-------------|--------|
+| **Question / workshop Q** | **Answer** comment; optional `docs/` if requested. No browser verify unless UI is involved. |
+| **Small doc / index** (e.g. `CLAUDE.md` only) | Implement file; comment **Delivered**; browser verify N/A. |
+| **Build / feature** | Full **build pipeline** above — never comment-only. |
+
+Rules:
+
+- **Allowed:** new files/folders, edits, docs, skills, non-destructive shell (build, test, `gh issue comment`).
+- **Forbidden (never):** `git push --force`, `git reset --hard`, mass delete, `rm -rf` / `Remove-Item -Recurse` on broad paths, dropping data, closing issues without user ask, committing `.env`/secrets, disabling hooks/security.
+
+## Finalize git (every agent stop)
+
+When **`.cursor/factory-loop-active`** exists and the ticket tick changed the repo:
+
+1. `git status` — stage deliverables only; exclude `.cursor/prompt-log/`, `.cursor/hooks/state/`, `.tmp/`.
+2. `git commit -m "factory-loop: <issue # or short title>"`
+3. `git push` (never `--force`).
+
+The **stop** hook runs `.cursor/hooks/factory-loop-commit-push-on-stop.ps1` as a backup with the same rules. Reload Cursor after hook changes.
 
 ## GitHub ticket factory
 
@@ -98,21 +186,7 @@ Use on a tick or as a one-shot when the prompt says to handle tickets/issues.
 
 ### Respond
 
-1. Read the **question** from title and body (not only the title).
-2. Draft a concise factual **Answer** comment:
-
-```text
-**Answer:** <direct answer to the ticket question>
-```
-
-Optional in-progress line (emoji in comment body only; GitHub API reactions do not support arbitrary emoji):
-
-```text
-We're working on this ticket 🥴😵‍💫
-```
-
-3. Post: `gh issue comment <n> -R owner/repo --body "..."`.
-4. **Verify:** `gh api repos/owner/repo/issues/<n>/comments --jq length` or `gh issue view <n> --comments`. If count is still `0`, the comment did not land.
+Use the stage-appropriate template (**Clarifying questions**, **Plan**, or final **Answer** / **Delivered** / **Verified** / **Screenshots** from the build pipeline). Post via `gh issue comment`; verify on GitHub.
 
 ### Multiple GitHub accounts (EMU vs workshop)
 
@@ -143,7 +217,12 @@ If write still returns EMU 403 after switching:
 - [ ] Tick output brief
 - [ ] Stop kills PID; no re-arm unless asked
 - [ ] GitHub: active account can write; switch with `gh auth switch` if EMU 403
-- [ ] GitHub: verify comment count after post
+- [ ] Build tickets: Clarify → Plan → approval before code
+- [ ] Browser verify via DevTools MCP; screenshots in `docs/screenshots/issue-<n>/`
+- [ ] Push before issue comment with screenshot links
+- [ ] No destructive git/shell/file actions
+- [ ] factory-loop-active flag while loop armed
+- [ ] Commit + push on stop (hook or manual)
 ```
 
 ## Examples

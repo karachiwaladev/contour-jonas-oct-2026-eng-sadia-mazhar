@@ -101,3 +101,31 @@ gh api repos/karachiwaladev/contour-jonas-oct-2026-eng-sadia-mazhar/issues/1/com
 ```
 
 Use the workshop/collaborator login for `karachiwaladev` ticket factories; keep EMU active only when policy allows writes to that org.
+
+---
+
+## Example 7: Execute + deliver + commit on stop
+
+**Ticket #13:** Build todo app in `todo/` with IndexedDB.
+
+**Tick workflow:**
+
+1. Create `todo/index.html`, `app.js`, `styles.css`.
+2. Comment with **Answer** + **Delivered:** `todo/index.html`.
+3. Agent turn ends → `stop` hook runs `factory-loop-commit-push-on-stop.ps1` (when `.cursor/factory-loop-active` exists).
+4. Hook: stage changes (exclude prompt-log/state/.tmp), `git commit`, `git push` — no force, no destructive commands.
+
+---
+
+## Example 8: Feature ticket with plan, browser verify, screenshots
+
+**Ticket #14:** Filters, due dates, tags (todo app extension).
+
+**Pipeline:**
+
+1. **Clarify** — comment `**Clarifying questions:**` (default tags? date picker UX? filter AND vs OR?).
+2. **Plan** — comment `**Plan:**` touch `todo/app.js`, schema migration in IndexedDB, UI in `index.html`.
+3. **Wait** — no code until `**Plan approved:**` on issue or user says go in chat.
+4. **Build** — implement.
+5. **Verify** — Chrome DevTools MCP: open app, create task with tag/due date, filter, screenshot each step → `docs/screenshots/issue-14/`.
+6. **Push** → comment with **Verified** + markdown image links to `main` paths on GitHub.
