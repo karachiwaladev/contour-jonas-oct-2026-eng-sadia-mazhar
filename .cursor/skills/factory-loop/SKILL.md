@@ -110,10 +110,22 @@ For any ticket that adds or changes a **product feature**, **app**, or **multi-f
 - Post **`**Plan:**`** on the issue: scope, files/folders, steps, test/verify approach, out-of-scope.
 - In chat, present the same plan and ask for approval.
 
-### 3. Approval gate
+### 3. Approval gate (hard stop)
 
-- **Do not build** until the user approves in chat **or** a comment contains **`**Plan approved:**`** (or explicit “go ahead” on that issue).
-- On loop ticks: if only **Plan** exists and no approval, stop after plan/questions for that tick — no implementation.
+**The agent must NEVER approve its own plan** — not by comment, not "with defaults", not because the user asked for a redo/reopen. Reopen/redo only restarts the pipeline at **Clarify**.
+
+Valid approval is exactly one of:
+
+1. The user answers an **AskQuestion** approval prompt in chat ("Approve plan" option), **or**
+2. A GitHub comment containing **`Plan approved:`** that was written **after** the latest **Plan** comment and does **not** contain the agent marker `<!-- factory-loop -->`.
+
+Every comment the agent posts must end with the hidden marker `<!-- factory-loop -->` so agent comments can never count as approval.
+
+Procedure:
+
+- After posting **Plan**, immediately call **AskQuestion** (Approve plan / Request changes) with a one-paragraph plan summary. Wait for the answer.
+- On loop ticks: if the latest **Plan** has no valid approval, do nothing except re-surface the pending approval in chat (once) — **no code, no files**.
+- **Redo / reopen:** post a short "Reopened for redo" comment, then run Clarify → Plan → approval again from scratch.
 
 ### 4. Build
 
@@ -122,7 +134,8 @@ For any ticket that adds or changes a **product feature**, **app**, or **multi-f
 ### 5. Verify (browser)
 
 - Read the **chrome-devtools** skill (`$3` / DevTools MCP). Prefer **Chrome DevTools MCP** (`navigate_page`, `take_snapshot`, `take_screenshot`) or **cursor-ide-browser** if that is what is connected.
-- Serve or open the app (`file://` or local static server if needed), exercise create/update/delete flows from the ticket.
+- **Run the app first:** start a static server in the project folder (`python -m http.server <port>` in a background shell), confirm HTTP 200, then open it **side by side** (`browser_navigate` with `position: "side"`, reuse the existing `viewId` from `browser_tabs` if a tab exists). Do not claim "verified" without a running app.
+- Exercise every flow named in the ticket; save screenshots to the temp path the tool returns, then copy into the repo.
 - Save screenshots under `docs/screenshots/issue-<n>/` (descriptive names, e.g. `01-create-task.png`).
 
 ### 6. Deliver (ticket + images)
@@ -217,7 +230,9 @@ If write still returns EMU 403 after switching:
 - [ ] Tick output brief
 - [ ] Stop kills PID; no re-arm unless asked
 - [ ] GitHub: active account can write; switch with `gh auth switch` if EMU 403
-- [ ] Build tickets: Clarify → Plan → approval before code
+- [ ] Build tickets: Clarify → Plan → AskQuestion approval before code (never self-approve)
+- [ ] Every agent comment ends with `<!-- factory-loop -->`
+- [ ] App running side by side before claiming Verified
 - [ ] Browser verify via DevTools MCP; screenshots in `docs/screenshots/issue-<n>/`
 - [ ] Push before issue comment with screenshot links
 - [ ] No destructive git/shell/file actions

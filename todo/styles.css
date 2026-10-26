@@ -63,6 +63,15 @@ h1 {
   color: #b45309;
 }
 
+.task-meta .due.overdue {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.task-item.is-overdue {
+  background: #fef2f2;
+}
+
 .task-meta .tags {
   color: #2563eb;
 }

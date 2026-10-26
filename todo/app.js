@@ -27,6 +27,13 @@ function normalizeTask(raw) {
   };
 }
 
+function todayIso() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 function parseTags(input) {
   return input
     .split(',')
@@ -142,9 +149,11 @@ function render(tasks, allTags) {
     meta.className = 'task-meta';
     if (task.dueDate) {
       const due = document.createElement('span');
-      due.className = 'due';
-      due.textContent = `Due: ${task.dueDate}`;
+      const overdue = !task.done && task.dueDate < todayIso();
+      due.className = 'due' + (overdue ? ' overdue' : '');
+      due.textContent = overdue ? `Overdue: ${task.dueDate}` : `Due: ${task.dueDate}`;
       meta.appendChild(due);
+      if (overdue) li.classList.add('is-overdue');
     }
     if (task.tags.length) {
       const tagsWrap = document.createElement('span');

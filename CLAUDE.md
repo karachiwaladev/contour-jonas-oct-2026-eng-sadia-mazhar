@@ -25,7 +25,7 @@ Add one row per factory project. Keep folders self-contained.
 
 | Folder | Ticket | Status | Entry |
 |--------|--------|--------|-------|
-| `todo/` | #3 Todo app | delivered | `todo/index.html` |
+| `todo/` | #3 / #14 Todo app | delivered | `todo/index.html` (filters, tags, due date) |
 | _(root)_ | #2 CLAUDE.md | delivered | this file |
 
 ## Agent rules (factory)
