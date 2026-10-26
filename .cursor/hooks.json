@@ -18,9 +18,27 @@
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/scenario-post-tool-use.ps1",
         "matcher": "Write",
         "timeout": 5
+      },
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/security-check-changed-file.ps1",
+        "matcher": "Write",
+        "timeout": 5
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/security-before-shell.ps1",
+        "matcher": "deepsec|DeepSec|nmap|Nmap|nikto|Nikto|sqlmap|Sqlmap|nuclei|Nuclei|masscan|Masscan|msfconsole|Msfconsole",
+        "timeout": 5,
+        "failClosed": true
       }
     ],
     "stop": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/security-on-stop.ps1",
+        "timeout": 10,
+        "loop_limit": 1
+      },
       {
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/scenario-on-stop.ps1",
         "timeout": 10,
