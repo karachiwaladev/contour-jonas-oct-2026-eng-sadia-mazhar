@@ -37,9 +37,11 @@ function New-GodObjectState {
     baselines                = [ordered]@{}
     growth_warned            = @()
     scope_warned             = @()
+    scope_ticket             = ''
     pending_messages         = @()
     last_response            = ''
     completion_followup_sent = $false
+    completion_ticket        = ''
     updated_at               = (Get-Date).ToUniversalTime().ToString('o')
   }
 }
@@ -73,22 +75,30 @@ function Read-GodObjectState {
     }
   }
 
-  if (-not $state -or ($ResetForGeneration -and
-      [string]$state.generation_id -ne $GenerationId)) {
+  if (-not $state) {
     return New-GodObjectState -ConversationId $ConversationId -GenerationId $GenerationId
   }
 
-  return [ordered]@{
+  $result = [ordered]@{
     conversation_id          = [string]$state.conversation_id
     generation_id            = [string]$state.generation_id
     baselines                = ConvertTo-GodObjectMap -Value $state.baselines
     growth_warned            = @($state.growth_warned)
     scope_warned             = @($state.scope_warned)
+    scope_ticket             = [string]$state.scope_ticket
     pending_messages         = @($state.pending_messages)
     last_response            = [string]$state.last_response
     completion_followup_sent = [bool]$state.completion_followup_sent
+    completion_ticket        = [string]$state.completion_ticket
     updated_at               = [string]$state.updated_at
   }
+
+  if ($ResetForGeneration -and [string]$state.generation_id -ne $GenerationId) {
+    $result.generation_id = $GenerationId
+    $result.last_response = ''
+  }
+
+  return $result
 }
 
 function Write-GodObjectState {

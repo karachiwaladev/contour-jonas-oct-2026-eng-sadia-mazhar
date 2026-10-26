@@ -30,6 +30,11 @@ try {
   $state = Read-GodObjectState -Path $statePath `
     -ConversationId ([string]$payload.conversation_id) `
     -GenerationId ([string]$payload.generation_id)
+  $scopeTicket = [string]$scope.ticket
+  if ([string]$state.completion_ticket -ne $scopeTicket) {
+    $state.completion_followup_sent = $false
+    $state.completion_ticket = $scopeTicket
+  }
   $response = [string]$state.last_response
   $missing = @()
 

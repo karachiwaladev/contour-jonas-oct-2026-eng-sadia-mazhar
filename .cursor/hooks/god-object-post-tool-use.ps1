@@ -23,6 +23,11 @@ try {
     -ResetForGeneration
 
   $scope = Read-GodObjectScope -Root $root
+  $scopeTicket = if ($scope) { [string]$scope.ticket } else { '' }
+  if ($scope -and [string]$state.scope_ticket -ne $scopeTicket) {
+    $state.scope_warned = @()
+    $state.scope_ticket = $scopeTicket
+  }
   $toolPath = Get-GodObjectToolPath -Payload $payload
   $relative = Get-GodObjectRelativePath -Path $toolPath -Root $root
   if ($config -and $scope -and [string]$scope.mode -eq 'implementation' -and

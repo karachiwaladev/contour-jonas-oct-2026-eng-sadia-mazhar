@@ -65,15 +65,23 @@ Describe 'God Object hook common helpers' {
     $actual.growth_warned | Should -Contain 'src/file.js'
   }
 
-  It 'resets state for a new generation when requested' {
+  It 'advances generation without losing conversation-level guards' {
     $path = Get-GodObjectStatePath $TestDrive 'reset'
     $state = New-GodObjectState 'reset' 'generation-1'
     $state.scope_warned = @('src/old.js')
+    $state.scope_ticket = 'ticket-1'
+    $state.completion_followup_sent = $true
+    $state.completion_ticket = 'ticket-1'
+    $state.last_response = 'old response'
     Write-GodObjectState $path $state
 
     $actual = Read-GodObjectState $path 'reset' 'generation-2' -ResetForGeneration
     $actual.generation_id | Should -Be 'generation-2'
-    @($actual.scope_warned).Count | Should -Be 0
+    $actual.scope_warned | Should -Contain 'src/old.js'
+    $actual.scope_ticket | Should -Be 'ticket-1'
+    $actual.completion_followup_sent | Should -BeTrue
+    $actual.completion_ticket | Should -Be 'ticket-1'
+    $actual.last_response | Should -BeNullOrEmpty
   }
 
   It 'recovers from missing and malformed state files' {

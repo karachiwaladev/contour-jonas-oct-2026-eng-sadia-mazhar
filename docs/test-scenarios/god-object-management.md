@@ -36,7 +36,7 @@ application or prove a future refactor's runtime compatibility.
 | GOD-005 | Failing test reported honestly | R5 completion fixture | Report a failed synthetic test in all required sections | Completion check accepts the honest result without claiming a pass | Validation | Passed | `test-god-object-hooks.ps1`: assertion passed, 2026-10-26 |
 | GOD-006 | R6: Existing factory hooks coexist | Current hook configuration | Parse scripts/config, run neutral existing hook inputs, and validate scenarios | Existing entries remain ordered and checks succeed | Integration | Passed | All PowerShell and JSON parsed; existing scenario hooks returned neutral JSON, 2026-10-26 |
 | GOD-007 | Malformed input and missing Git baseline | R7 fixtures | Send empty/malformed JSON and edit an untracked file | Hooks fail open; edit-delta fallback warns safely | Error handling | Passed | `test-god-object-hooks.ps1`: assertions passed, 2026-10-26 |
-| GOD-008 | No repetitive loop or timeout | R8 fixtures | Repeat warned write and stop follow-up; time invocations | Warnings are one-shot, follow-up is bounded, each invocation is under five seconds | Performance | Passed | 15 integration assertions passed; 18/18 Pester tests passed with 100% measured line and command coverage, 2026-10-26 |
+| GOD-008 | No repetitive loop or timeout | R8 fixtures | Repeat warned write and stop follow-up; time invocations | Warnings are one-shot, follow-up is bounded, each invocation is under five seconds | Performance | Passed | 17 integration assertions passed (latest maximum 1203 ms); 18/18 Pester tests passed with 100% measured line and command coverage, 2026-10-26 |
 
 ## Assumptions / open questions
 

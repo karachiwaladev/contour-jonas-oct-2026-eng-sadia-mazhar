@@ -142,6 +142,25 @@ try {
   Assert-True (-not $outsideAgain.additional_context) `
     'scope feedback must be one-shot'
 
+  $scopeReport = New-Payload -Conversation 'scope' -Generation 'generation-2'
+  $scopeReport.text = @'
+## Changed files
+- src/large.js
+## Tests
+- Fixture command: Passed.
+## Architecture
+- Growth logic remains with the fixture owner.
+## Unresolved
+- None.
+'@
+  $null = Invoke-TestHook 'god-object-after-agent-response.ps1' $scopeReport
+  $scopeStop = New-Payload -Conversation 'scope' -Generation 'generation-2'
+  $scopeStop.status = 'completed'
+  $scopeStop.loop_count = 0
+  $scopeStopResult = Invoke-TestHook 'god-object-on-stop.ps1' $scopeStop
+  Assert-True ($scopeStopResult.followup_message -match 'src/outside.js') `
+    'scope warnings must survive generation changes until disposition'
+
   # Missing Git baseline uses edit delta safely.
   1..7 | ForEach-Object { "// new $_" } |
     Set-Content (Join-Path $fixture 'src/new.js') -Encoding utf8
@@ -172,6 +191,16 @@ try {
   $stopAgain = Invoke-TestHook 'god-object-on-stop.ps1' $stop
   Assert-True (-not $stopAgain.followup_message) `
     'completion follow-up must not loop'
+
+  $followupResponse = New-Payload -Conversation 'completion' -Generation 'generation-2'
+  $followupResponse.text = 'Still incomplete.'
+  $null = Invoke-TestHook 'god-object-after-agent-response.ps1' $followupResponse
+  $followupStop = New-Payload -Conversation 'completion' -Generation 'generation-2'
+  $followupStop.status = 'completed'
+  $followupStop.loop_count = 0
+  $followupStopResult = Invoke-TestHook 'god-object-on-stop.ps1' $followupStop
+  Assert-True (-not $followupStopResult.followup_message) `
+    'completion one-shot guard must survive generation changes'
 
   $complete = New-Payload -Conversation 'complete'
   $complete.text = @'
