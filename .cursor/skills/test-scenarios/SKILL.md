@@ -25,6 +25,32 @@ existing document when it covers the changed behavior.
 7. Revisit the document whenever requirements or implementation behavior
    changes.
 
+## During-development workflow
+
+Keep the affected source and its scenario document side by side throughout
+implementation:
+
+1. Reuse the existing feature document. For a new feature, copy
+   `docs/test-scenarios/_template.md` to a descriptive filename.
+2. Before or during coding, map acceptance criteria to scenarios and keep
+   unexecuted scenarios `Planned`.
+3. After behavior, validation, data flow, or integration changes, update the
+   corresponding scenarios and expected results in the same change.
+4. Treat the edit-hook reminder as a prompt to review coverage, not a command
+   to create another document. Generated files, dependencies, build outputs,
+   screenshots, and irrelevant edits do not require scenario changes.
+5. Run the local structural validator:
+
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/tools/validate-test-scenarios.ps1
+   ```
+
+6. Resolve missing fields, duplicate IDs, broken evidence links, and uncovered
+   requirement IDs before delivery. The validator checks documentation
+   structure only; it never decides whether a test passed.
+7. After implementation, use the browser-testing workflow below to update
+   actual results separately from the planned cases.
+
 ## Post-development browser testing
 
 Use Chrome DevTools after coding and local static checks pass:

@@ -34,6 +34,31 @@ function Write-FactoryLog($Record) {
   Write-PromptLog -Record $Record
 }
 
+# Do not auto-commit feature work while its scenario review is unresolved.
+if ($payload -and -not [string]::IsNullOrWhiteSpace([string]$payload.conversation_id)) {
+  . (Join-Path $PSScriptRoot 'scenario-hook-common.ps1')
+  $scenarioStatePath = Get-ScenarioStatePath -Root $root `
+    -ConversationId ([string]$payload.conversation_id)
+  if (Test-Path $scenarioStatePath) {
+    try {
+      $scenarioState = Get-Content -Path $scenarioStatePath -Raw -Encoding utf8 |
+        ConvertFrom-Json
+      if ([bool]$scenarioState.blocked -and @($scenarioState.application_files).Count -gt 0) {
+        Write-FactoryLog @{
+          action = 'skipped_scenario_documentation'
+          reason = [string]$scenarioState.blocked_reason
+        }
+        Write-Output '{}'
+        exit 0
+      }
+    } catch {
+      Write-FactoryLog @{ action = 'scenario_state_unreadable'; message = $_.Exception.Message }
+      Write-Output '{}'
+      exit 0
+    }
+  }
+}
+
 $branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
 if ($branch -in @('main', 'master', 'HEAD')) {
   Write-FactoryLog @{ action = 'skipped_default_branch'; branch = $branch }

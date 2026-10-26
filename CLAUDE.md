@@ -17,7 +17,8 @@ This file stays **under 100 lines**. It is the map only — not the full spec.
 | `.cursor/skills/factory-loop/` | Loop + ticket execute, comment, commit on stop |
 | `.cursor/skills/test-scenarios/` | Feature scenario documentation workflow |
 | `.cursor/skills/code-review/` | Pre-PR Bugbot review and severity gate |
-| `.cursor/hooks/` | Prompt JSONL logging, factory-loop git push on stop |
+| `.cursor/hooks/` | Prompt logging, scenario reminders, stop validation, safe push |
+| `.cursor/tools/validate-test-scenarios.ps1` | Local scenario document validator |
 | `todo/` | Ticket #3 — client-side todo app (IndexedDB) |
 | `docs/test-scenarios/` | Per-feature scenarios, status, evidence, traceability |
 | `docs/screenshots/` | Browser verification evidence by issue |
