@@ -34,6 +34,13 @@ function Write-FactoryLog($Record) {
   Write-PromptLog -Record $Record
 }
 
+$branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
+if ($branch -in @('main', 'master', 'HEAD')) {
+  Write-FactoryLog @{ action = 'skipped_default_branch'; branch = $branch }
+  Write-Output '{}'
+  exit 0
+}
+
 $porcelain = git status --porcelain 2>&1
 if ([string]::IsNullOrWhiteSpace($porcelain)) {
   Write-Output '{}'
@@ -59,7 +66,7 @@ if ($LASTEXITCODE -ne 0) {
   exit 0
 }
 
-git push
+git push -u origin $branch
 if ($LASTEXITCODE -ne 0) {
   Write-FactoryLog @{ action = 'push_failed'; message = $msg }
   Write-Output '{}'
