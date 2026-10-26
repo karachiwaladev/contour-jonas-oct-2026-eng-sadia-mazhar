@@ -11,6 +11,11 @@
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/scenario-after-file-edit.ps1",
         "matcher": "Write",
         "timeout": 5
+      },
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/god-object-after-file-edit.ps1",
+        "matcher": "Write",
+        "timeout": 5
       }
     ],
     "postToolUse": [
@@ -23,6 +28,11 @@
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/security-check-changed-file.ps1",
         "matcher": "Write",
         "timeout": 5
+      },
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/god-object-post-tool-use.ps1",
+        "matcher": "Write",
+        "timeout": 5
       }
     ],
     "beforeShellExecution": [
@@ -33,6 +43,13 @@
         "failClosed": true
       }
     ],
+    "afterAgentResponse": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/god-object-after-agent-response.ps1",
+        "matcher": "AgentResponse",
+        "timeout": 5
+      }
+    ],
     "stop": [
       {
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/security-on-stop.ps1",
@@ -41,6 +58,11 @@
       },
       {
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/scenario-on-stop.ps1",
+        "timeout": 10,
+        "loop_limit": 1
+      },
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/god-object-on-stop.ps1",
         "timeout": 10,
         "loop_limit": 1
       },

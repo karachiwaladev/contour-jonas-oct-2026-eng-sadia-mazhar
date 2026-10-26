@@ -1,0 +1,18 @@
+---
+description: Keep new responsibilities within approved, cohesive repository boundaries
+globs: todo/**, .cursor/hooks/**, .cursor/tools/**
+alwaysApply: false
+---
+
+# Responsibility placement
+
+Before implementation, identify the owner and destination of each new
+responsibility. Prefer existing abstractions and repository conventions.
+
+- Keep changes within the approved ticket; explain required adjacent edits.
+- Add or update established tests when behavior changes.
+- Do not move code solely to reduce file length.
+- Avoid unrelated cleanup and premature rewrites.
+- Document exceptions when the existing architecture prevents a clean boundary.
+- Report uncertainty and actual test evidence; never invent repository facts or
+  passing results.
