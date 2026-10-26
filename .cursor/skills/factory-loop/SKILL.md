@@ -147,21 +147,10 @@ Procedure:
 - Update the feature's scenario statuses after verification. `Passed` requires
   local evidence; documentation alone never counts as a pass.
 
-### 6. Code review (Bugbot gate)
+### 6. Deliver via pull request
 
-- Commit the verified changes locally, then read and run the `code-review` skill
-  against the intended PR base.
-- Bugbot is read-only. Critical or High findings block delivery; present them
-  to the user and wait for explicit permission before fixing. Medium or Low
-  findings are non-blocking but must be included in the PR.
-- After approved fixes, rerun affected static/browser checks and Bugbot.
-- Do not open or update the delivery PR while Bugbot is blocked, failed, or has
-  unresolved Critical/High findings.
-
-### 7. Deliver via pull request
-
-1. **Push the reviewed feature branch** (deliverables + scenarios + screenshots). Never push straight to `main`/`master`.
-2. **Open a PR** into the intended base branch (`gh pr create --base <base> --head <branch>`): the title references the ticket. Use `Refs #<n>` in the body — never `Closes #<n>` / `Fixes #<n>`, which would auto-close the ticket on merge. Include summary, how to run, test plan, the feature scenario document, Bugbot result/findings, and screenshot links.
+1. **Commit + push the feature branch** (deliverables + screenshots). Never push straight to `main`/`master`.
+2. **Open a PR** into the default branch (`gh pr create --base <default> --head <branch>`): the title references the ticket. Use `Refs #<n>` in the body — never `Closes #<n>` / `Fixes #<n>`, which would auto-close the ticket on merge. Include summary, how to run, test plan, the feature scenario document, and screenshot links.
 3. Post the ticket comment (ends with `<!-- factory-loop -->`):
 
 ```text
@@ -173,8 +162,6 @@ Procedure:
 
 **Test scenarios:** <branch link to docs/test-scenarios/<feature>.md>
 
-**Code review:** Bugbot <found no bugs | found non-blocking findings linked in PR>
-
 **Screenshots:**
 ![create task](https://github.com/<owner>/<repo>/blob/<branch>/docs/screenshots/issue-<n>/01-create-task.png)
 
@@ -183,7 +170,7 @@ Procedure:
 
 Use real `owner/repo` from `git remote`. Link screenshots by **branch name** until the PR is merged (the files are not on `main` yet).
 
-### 8. Manual review gate (hard stop, same rule as plan approval)
+### 7. Review gate (hard stop, same rule as plan approval)
 
 - **Do not merge the PR. Do not close the ticket.** Both wait for a human.
 - Valid review approval is: the user says so in chat (AskQuestion: Approve & merge / Request changes), or the PR has a GitHub **Approved** review / a human comment `Review approved:` (no `<!-- factory-loop -->` marker).
@@ -196,7 +183,7 @@ Use real `owner/repo` from `git remote`. Link screenshots by **branch name** unt
 |-------------|--------|
 | **Question / workshop Q** | **Answer** comment; optional `docs/` if requested. No browser verify unless UI is involved. |
 | **Small doc / index** (e.g. `CLAUDE.md` only) | Implement file; comment **Delivered**; browser verify N/A. |
-| **Build / feature** | Full **build pipeline** above (branch → Chrome verify → Bugbot → PR → manual review) — never comment-only, never straight to `main`. |
+| **Build / feature** | Full **build pipeline** above (branch → PR → manual review) — never comment-only, never straight to `main`. |
 
 Rules:
 
