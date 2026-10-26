@@ -6,13 +6,10 @@ alwaysApply: false
 
 # Feature test scenarios
 
-When adding or changing a feature:
+When implementing or modifying a feature, inspect its acceptance criteria and existing test scenarios. Create or update scenarios for happy paths, validation failures, edge cases, authorization, integration behavior, and regressions where relevant. Document expected results and link scenarios to requirements. Run available tests when safe, and report actual results separately from planned tests.
 
-- Read the requirement, approved plan, existing tests, and existing scenario document first.
-- Use the `test-scenarios` skill to create or update `docs/test-scenarios/<feature>.md` alongside the code.
-- Cover acceptance criteria, happy paths, validation, boundaries, security, data/integrations, and regression risks relevant to the change.
-- Add automated tests only when the repository already has a suitable framework.
-- Use only: `Planned`, `Automated`, `Passed`, `Failed`, or `Blocked`.
-- Never mark a scenario `Passed` merely because it is documented. Include local test or screenshot evidence.
-- Record unresolved assumptions and ask the user; do not invent business rules.
-- Update scenarios when requirements or implementation behavior changes.
+- Use the `test-scenarios` skill and reuse
+  `docs/test-scenarios/<feature>.md`; do not create duplicate documents.
+- Keep unexecuted scenarios `Planned`. Never infer `Passed` from documentation
+  or implementation.
+- Record unresolved assumptions and ask the user instead of inventing rules.

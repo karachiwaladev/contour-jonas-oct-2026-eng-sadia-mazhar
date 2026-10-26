@@ -6,7 +6,26 @@
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/append-prompt.ps1"
       }
     ],
+    "afterFileEdit": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/scenario-after-file-edit.ps1",
+        "matcher": "Write",
+        "timeout": 5
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/scenario-post-tool-use.ps1",
+        "matcher": "Write",
+        "timeout": 5
+      }
+    ],
     "stop": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/scenario-on-stop.ps1",
+        "timeout": 10,
+        "loop_limit": 1
+      },
       {
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/flush-prompts-on-stop.ps1"
       },
