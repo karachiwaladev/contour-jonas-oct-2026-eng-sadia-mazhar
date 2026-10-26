@@ -13,8 +13,11 @@
       <input id="task-input" type="text" placeholder="New task…" autocomplete="off" required />
       <input id="due-input" type="date" title="Due date (optional)" />
       <input id="tags-input" type="text" placeholder="Tags (comma-separated)" autocomplete="off" />
+      <label class="repeat-opt"><input id="repeat-input" type="checkbox" /> Repeat daily</label>
+      <input id="until-input" type="date" title="Repeat until (optional)" disabled />
       <button type="submit">Add</button>
     </form>
+    <p id="form-error" class="form-error" role="alert"></p>
     <div class="filters">
       <label>
         Status

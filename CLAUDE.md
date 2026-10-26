@@ -25,14 +25,14 @@ Add one row per factory project. Keep folders self-contained.
 
 | Folder | Ticket | Status | Entry |
 |--------|--------|--------|-------|
-| `todo/` | #3 / #14 Todo app | delivered | `todo/index.html` (filters, tags, due date) |
+| `todo/` | #3 / #14 / #16 Todo app | #16 in PR review | `todo/index.html` (filters, tags, due date, daily recurrence) |
 | _(root)_ | #2 CLAUDE.md | delivered | this file |
 
 ## Agent rules (factory)
 
 1. **Build pipeline** — Clarify → Plan → **approval** → Build → **Chrome DevTools verify** → screenshots on ticket.
 2. **No destructive** git/shell (no force push, hard reset, mass delete).
-3. **Deliver** — push first, then GitHub comment with `**Delivered:**`, `**Verified:**`, screenshot links under `docs/screenshots/issue-<n>/`.
+3. **Deliver via PR** — feature branch `factory/issue-<n>-<slug>`, PR with `Refs #<n>`, ticket comment with `**Delivered:**`, `**Verified:**`, screenshots (`docs/screenshots/issue-<n>/`). **Wait for manual review; no merge/close without approval.**
 4. **Commit + push** when `.cursor/factory-loop-active` and agent stop hook runs.
 
 ## Links

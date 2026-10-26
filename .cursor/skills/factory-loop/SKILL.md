@@ -129,6 +129,7 @@ Procedure:
 
 ### 4. Build
 
+- **Branch first:** after approval, `git switch -c factory/issue-<n>-<short-slug>` from an up-to-date default branch. Never build ticket work directly on `main`/`master`.
 - Implement under the path the ticket names (e.g. `todo/`). Match repo conventions. Non-destructive changes only.
 
 ### 5. Verify (browser)
@@ -138,25 +139,33 @@ Procedure:
 - Exercise every flow named in the ticket; save screenshots to the temp path the tool returns, then copy into the repo.
 - Save screenshots under `docs/screenshots/issue-<n>/` (descriptive names, e.g. `01-create-task.png`).
 
-### 6. Deliver (ticket + images)
+### 6. Deliver via pull request
 
-1. **Commit + push** deliverables and screenshots (Finalize git).
-2. Post comment:
+1. **Commit + push the feature branch** (deliverables + screenshots). Never push straight to `main`/`master`.
+2. **Open a PR** into the default branch (`gh pr create --base <default> --head <branch>`): the title references the ticket. Use `Refs #<n>` in the body — never `Closes #<n>` / `Fixes #<n>`, which would auto-close the ticket on merge. Include summary, how to run, test plan, screenshot links.
+3. Post the ticket comment (ends with `<!-- factory-loop -->`):
 
 ```text
 **Answer:** <summary of what was built>
 
-**Delivered:** <paths, how to run>
+**Delivered:** PR #<pr> on branch `<branch>` — <paths, how to run>
 
 **Verified:** <what you tested in the browser>
 
 **Screenshots:**
-![create task](https://github.com/<owner>/<repo>/blob/main/docs/screenshots/issue-<n>/01-create-task.png)
+![create task](https://github.com/<owner>/<repo>/blob/<branch>/docs/screenshots/issue-<n>/01-create-task.png)
+
+**Status:** waiting for manual review and approval of PR #<pr>. Ticket stays open until the PR is merged.
 ```
 
-Use real `owner/repo` from `git remote`. After push, `blob/main` URLs render on the issue.
+Use real `owner/repo` from `git remote`. Link screenshots by **branch name** until the PR is merged (the files are not on `main` yet).
 
-(Omit in-progress emoji when fully delivered.)
+### 7. Review gate (hard stop, same rule as plan approval)
+
+- **Do not merge the PR. Do not close the ticket.** Both wait for a human.
+- Valid review approval is: the user says so in chat (AskQuestion: Approve & merge / Request changes), or the PR has a GitHub **Approved** review / a human comment `Review approved:` (no `<!-- factory-loop -->` marker).
+- On loop ticks: if the PR is open and not approved, do nothing except (once) remind the user in chat. If changes are requested, push fixes to the same branch and comment.
+- After approval, merge the PR with a normal (non-force) merge, then close the ticket with a comment linking the merged PR. Only then is the ticket done and the loop moves to the next one.
 
 ## Execute (non-feature tickets)
 
@@ -164,22 +173,23 @@ Use real `owner/repo` from `git remote`. After push, `blob/main` URLs render on 
 |-------------|--------|
 | **Question / workshop Q** | **Answer** comment; optional `docs/` if requested. No browser verify unless UI is involved. |
 | **Small doc / index** (e.g. `CLAUDE.md` only) | Implement file; comment **Delivered**; browser verify N/A. |
-| **Build / feature** | Full **build pipeline** above — never comment-only. |
+| **Build / feature** | Full **build pipeline** above (branch → PR → manual review) — never comment-only, never straight to `main`. |
 
 Rules:
 
 - **Allowed:** new files/folders, edits, docs, skills, non-destructive shell (build, test, `gh issue comment`).
-- **Forbidden (never):** `git push --force`, `git reset --hard`, mass delete, `rm -rf` / `Remove-Item -Recurse` on broad paths, dropping data, closing issues without user ask, committing `.env`/secrets, disabling hooks/security.
+- **Forbidden (never):** `git push --force`, `git reset --hard`, mass delete, `rm -rf` / `Remove-Item -Recurse` on broad paths, dropping data, closing issues or merging PRs without the review approval above, `Closes #<n>` keywords in PRs, committing `.env`/secrets, disabling hooks/security.
 
 ## Finalize git (every agent stop)
 
 When **`.cursor/factory-loop-active`** exists and the ticket tick changed the repo:
 
-1. `git status` — stage deliverables only; exclude `.cursor/prompt-log/`, `.cursor/hooks/state/`, `.tmp/`.
-2. `git commit -m "factory-loop: <issue # or short title>"`
-3. `git push` (never `--force`).
+1. Be on a **feature branch** (`factory/issue-<n>-<slug>`), never `main`/`master`.
+2. `git status` — stage deliverables only; exclude `.cursor/prompt-log/`, `.cursor/hooks/state/`, `.tmp/`.
+3. `git commit -m "factory-loop: <issue # or short title>"`
+4. `git push -u origin <branch>` (never `--force`).
 
-The **stop** hook runs `.cursor/hooks/factory-loop-commit-push-on-stop.ps1` as a backup with the same rules. Reload Cursor after hook changes.
+The **stop** hook runs `.cursor/hooks/factory-loop-commit-push-on-stop.ps1` as a backup with the same rules; it **skips** (and logs) when the current branch is `main`/`master`. Reload Cursor after hook changes.
 
 ## GitHub ticket factory
 
@@ -234,7 +244,9 @@ If write still returns EMU 403 after switching:
 - [ ] Every agent comment ends with `<!-- factory-loop -->`
 - [ ] App running side by side before claiming Verified
 - [ ] Browser verify via DevTools MCP; screenshots in `docs/screenshots/issue-<n>/`
-- [ ] Push before issue comment with screenshot links
+- [ ] Work on `factory/issue-<n>-<slug>` branch; PR opened (`Refs #<n>`, never `Closes`)
+- [ ] Push branch before issue comment with screenshot links
+- [ ] Wait for manual PR review/approval; no merge or ticket close without it
 - [ ] No destructive git/shell/file actions
 - [ ] factory-loop-active flag while loop armed
 - [ ] Commit + push on stop (hook or manual)

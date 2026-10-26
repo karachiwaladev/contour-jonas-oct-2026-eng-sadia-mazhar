@@ -1,12 +1,19 @@
 const DB_NAME = 'todo-app';
 const STORE = 'tasks';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 function openDb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // Let a newer tab upgrade the schema instead of being blocked by this one.
+      req.result.onversionchange = () => {
+        req.result.close();
+        location.reload();
+      };
+      resolve(req.result);
+    };
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains(STORE)) {
@@ -24,6 +31,9 @@ function normalizeTask(raw) {
     createdAt: raw.createdAt ?? Date.now(),
     dueDate: raw.dueDate ?? null,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
+    recurrence: raw.recurrence === 'daily' ? 'daily' : null,
+    repeatUntil: raw.repeatUntil ?? null,
+    spawned: Boolean(raw.spawned),
   };
 }
 
@@ -32,6 +42,29 @@ function todayIso() {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function addDaysIso(iso, days) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const next = new Date(y, m - 1, d + days);
+  const mm = String(next.getMonth() + 1).padStart(2, '0');
+  const dd = String(next.getDate()).padStart(2, '0');
+  return `${next.getFullYear()}-${mm}-${dd}`;
+}
+
+// Creates the next daily occurrence once, when a recurring task is completed.
+async function spawnNextOccurrence(database, task) {
+  if (task.recurrence !== 'daily' || !task.dueDate || task.spawned) return;
+  const nextDue = addDaysIso(task.dueDate, 1);
+  if (task.repeatUntil && nextDue > task.repeatUntil) return;
+  await addTask(database, {
+    text: task.text,
+    dueDate: nextDue,
+    tags: task.tags,
+    recurrence: task.recurrence,
+    repeatUntil: task.repeatUntil,
+  });
+  task.spawned = true;
 }
 
 function parseTags(input) {
@@ -51,16 +84,19 @@ async function getAllTasks(db) {
   });
 }
 
-async function addTask(db, { text, dueDate, tags }) {
+async function addTask(db, { text, dueDate, tags, recurrence = null, repeatUntil = null, createdAt = Date.now() }) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
     const store = tx.objectStore(STORE);
     const req = store.add({
       text,
       done: false,
-      createdAt: Date.now(),
+      createdAt,
       dueDate: dueDate || null,
       tags,
+      recurrence,
+      repeatUntil,
+      spawned: false,
     });
     req.onerror = () => reject(req.error);
     req.onsuccess = () => resolve(req.result);
@@ -92,6 +128,9 @@ const formEl = document.getElementById('add-form');
 const inputEl = document.getElementById('task-input');
 const dueEl = document.getElementById('due-input');
 const tagsEl = document.getElementById('tags-input');
+const repeatEl = document.getElementById('repeat-input');
+const untilEl = document.getElementById('until-input');
+const errorEl = document.getElementById('form-error');
 const statusFilterEl = document.getElementById('status-filter');
 const tagFilterEl = document.getElementById('tag-filter');
 
@@ -155,6 +194,12 @@ function render(tasks, allTags) {
       meta.appendChild(due);
       if (overdue) li.classList.add('is-overdue');
     }
+    if (task.recurrence === 'daily') {
+      const rep = document.createElement('span');
+      rep.className = 'repeat';
+      rep.textContent = task.repeatUntil ? `Repeats daily until ${task.repeatUntil}` : 'Repeats daily';
+      meta.appendChild(rep);
+    }
     if (task.tags.length) {
       const tagsWrap = document.createElement('span');
       tagsWrap.className = 'tags';
@@ -169,6 +214,7 @@ function render(tasks, allTags) {
     toggleBtn.textContent = task.done ? 'Undo' : 'Done';
     toggleBtn.addEventListener('click', async () => {
       task.done = !task.done;
+      if (task.done) await spawnNextOccurrence(db, task);
       await updateTask(db, task);
       await refresh();
     });
@@ -196,17 +242,37 @@ formEl.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = inputEl.value.trim();
   if (!text) return;
+  const repeat = repeatEl.checked;
+  const repeatUntil = untilEl.value || null;
+  errorEl.textContent = '';
+  if (repeat && !dueEl.value) {
+    errorEl.textContent = 'A due date is required for a repeating task.';
+    return;
+  }
+  if (repeat && repeatUntil && repeatUntil < dueEl.value) {
+    errorEl.textContent = 'Repeat-until date cannot be before the due date.';
+    return;
+  }
   await addTask(db, {
     text,
     dueDate: dueEl.value || null,
     tags: parseTags(tagsEl.value),
+    recurrence: repeat ? 'daily' : null,
+    repeatUntil: repeat ? repeatUntil : null,
   });
   inputEl.value = '';
   dueEl.value = '';
   tagsEl.value = '';
+  repeatEl.checked = false;
+  untilEl.value = '';
+  untilEl.disabled = true;
   await refresh();
 });
 
+repeatEl.addEventListener('change', () => {
+  untilEl.disabled = !repeatEl.checked;
+  if (!repeatEl.checked) untilEl.value = '';
+});
 statusFilterEl.addEventListener('change', () => refresh());
 tagFilterEl.addEventListener('change', () => refresh());
 
