@@ -158,6 +158,20 @@ Procedure:
 - Do not open or update the delivery PR while Bugbot is blocked, failed, or has
   unresolved Critical/High findings.
 
+### 6a. Security review (conditional gate)
+
+- Read and run the `deep-security-audit` skill for releases and changes that
+  affect authentication, authorization, permissions, sensitive data, hooks,
+  shell execution, external requests, dependencies, or infrastructure.
+- Scope the review to changed code and affected trust boundaries. Reuse open
+  findings; do not rescan unchanged code without a reason.
+- Obtain approval before installing or running paid, source-transmitting, or
+  active security tools. Record actual cost and every failed, blocked, or
+  unexecuted check.
+- Confirmed unresolved Critical/High findings block delivery unless a human
+  explicitly risk-accepts them. This gate supplements Bugbot and never replaces
+  manual PR review.
+
 ### 7. Deliver via pull request
 
 1. **Push the reviewed feature branch** (deliverables + scenarios + screenshots). Never push straight to `main`/`master`.
@@ -267,6 +281,7 @@ If write still returns EMU 403 after switching:
 - [ ] Every agent comment ends with `<!-- factory-loop -->`
 - [ ] App running side by side before claiming Verified
 - [ ] Browser verify via DevTools MCP; screenshots in `docs/screenshots/issue-<n>/`
+- [ ] Security-boundary/release changes: scoped deep-security-audit evidence
 - [ ] Work on `factory/issue-<n>-<slug>` branch; PR opened (`Refs #<n>`, never `Closes`)
 - [ ] Push branch before issue comment with screenshot links
 - [ ] Wait for manual PR review/approval; no merge or ticket close without it
