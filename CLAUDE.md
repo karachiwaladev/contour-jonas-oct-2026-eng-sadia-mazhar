@@ -17,12 +17,14 @@ This file stays **under 100 lines**. It is the map only — not the full spec.
 | `.cursor/skills/factory-loop/` | Loop + ticket execute, comment, commit on stop |
 | `.cursor/skills/test-scenarios/` | Feature scenario documentation workflow |
 | `.cursor/skills/code-review/` | Pre-PR Bugbot review and severity gate |
+| `.cursor/skills/god-object-management/` | Responsibility analysis, ticketing, bounded execution |
 | `.cursor/skills/deep-security-audit/` | Scoped security baseline, investigation, and revalidation |
 | `.cursor/hooks/` | Prompt logging, scenario reminders, stop validation, safe push |
 | `.cursor/tools/validate-test-scenarios.ps1` | Local scenario document validator |
 | `.cursor/tools/validate-security-audit.ps1` | Local security evidence validator |
 | `todo/` | Ticket #3 — client-side todo app (IndexedDB) |
 | `docs/test-scenarios/` | Per-feature scenarios, status, evidence, traceability |
+| `docs/god-object-management/` | Architecture analysis baselines |
 | `docs/security/` | Security baseline, audit/finding templates, and findings ledger |
 | `docs/screenshots/` | Browser verification evidence by issue |
 
@@ -51,4 +53,5 @@ Add one row per factory project. Keep folders self-contained.
 - Loop skill: `.cursor/skills/factory-loop/SKILL.md`
 - Scenario skill: `.cursor/skills/test-scenarios/SKILL.md`
 - Review skill: `.cursor/skills/code-review/SKILL.md`
+- God object skill: `.cursor/skills/god-object-management/SKILL.md`
 - Security skill: `.cursor/skills/deep-security-audit/SKILL.md`

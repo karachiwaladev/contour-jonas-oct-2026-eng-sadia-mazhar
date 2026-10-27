@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "growth": {
+    "substantialAddedLines": 80,
+    "minimumPercentageAddedLines": 40,
+    "percentageOfBaseline": 25,
+    "minimumBaselineLines": 100
+  },
+  "activeAnalysis": "docs/god-object-management/setup-baseline.md",
+  "candidateFiles": [
+    "todo/app.js",
+    ".cursor/hooks/scenario-hook-common.ps1",
+    ".cursor/tools/validate-test-scenarios.ps1",
+    ".cursor/skills/factory-loop/SKILL.md"
+  ],
+  "excludedPaths": [
+    ".git/",
+    ".cursor/hooks/state/",
+    ".cursor/prompt-log/",
+    ".tmp/",
+    "node_modules/",
+    "vendor/",
+    "dist/",
+    "build/",
+    "coverage/",
+    "docs/screenshots/"
+  ]
+}
