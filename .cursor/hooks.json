@@ -23,6 +23,11 @@
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/security-check-changed-file.ps1",
         "matcher": "Write",
         "timeout": 5
+      },
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/factory-loop-ticket-scan.ps1",
+        "matcher": "Shell",
+        "timeout": 15
       }
     ],
     "beforeShellExecution": [
@@ -30,6 +35,18 @@
         "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/security-before-shell.ps1",
         "matcher": "deepsec|DeepSec|nmap|Nmap|nikto|Nikto|sqlmap|Sqlmap|nuclei|Nuclei|masscan|Masscan|msfconsole|Msfconsole",
         "timeout": 5,
+        "failClosed": true
+      },
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/factory-loop-untrusted-input.ps1",
+        "matcher": "gh\\s+(pr\\s+(checkout|merge)|issue\\s+(view|list)|api.*?issues)|git\\s+(merge|fetch|pull|checkout|switch).*?(refs/pull|pull/|fork)",
+        "timeout": 5,
+        "failClosed": true
+      },
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/factory-loop-before-push.ps1",
+        "matcher": "git\\s+push",
+        "timeout": 15,
         "failClosed": true
       }
     ],

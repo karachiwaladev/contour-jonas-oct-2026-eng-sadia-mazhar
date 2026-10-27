@@ -22,7 +22,7 @@ runtime or that the repository has no vulnerabilities.
 | Repository → Cursor agent/hooks | Source, prompts, tool input | Prompt/command injection, path validation |
 | Agent stop hook → Git/GitHub | Stage, commit, push, PR workflow | Unintended files, credentials, authorization |
 | Prompt logs/screenshots → repository | Prompts, UI/task content | Secrets and personal-data exposure |
-| GitHub → maintainers | PRs, comments, review evidence | Untrusted content and review bypass |
+| GitHub → agent/maintainers | Issue/PR text, comments, refs, approvals | Prompt/command injection, malicious base refs, forged approval |
 
 ## Entry points
 
@@ -57,6 +57,12 @@ runtime or that the repository has no vulnerabilities.
   workflow checks.
 - The deep-security-audit workflow adds scoped reviews, a findings ledger, and
   approval gates for external or paid tools.
+- Factory ticket ingestion scans full issue JSON before use, verifies
+  collaborator permission for approval authors, and treats all GitHub text as
+  data rather than commands.
+- Every code-changing ticket and PR update requires Cursor security-review
+  evidence bound to the current diff hash. Critical/High findings, scan failure,
+  stale evidence, external PR refs, or an unexpected origin block delivery.
 
 ## Priority review areas
 

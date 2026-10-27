@@ -50,12 +50,8 @@ try {
   if ($file.Length -gt 1MB) { Write-EmptyResult }
   $content = @(Get-Content -LiteralPath $pathFull -Encoding utf8)
 
-  $rules = @(
-    @{ Name = 'private-key-header'; Pattern = '-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----' },
-    @{ Name = 'github-token'; Pattern = '\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})\b' },
-    @{ Name = 'aws-access-key'; Pattern = '\b(?:AKIA|ASIA)[A-Z0-9]{16}\b' },
-    @{ Name = 'assigned-secret'; Pattern = '(?i)\b(?:api[_-]?key|client[_-]?secret|access[_-]?token|password)\b\s*[:=]\s*["''][A-Za-z0-9+/_.=-]{16,}["'']' }
-  )
+  . (Join-Path $PSScriptRoot 'security-secret-rules.ps1')
+  $rules = Get-SecuritySecretRules
 
   $safeConversation = if ([string]::IsNullOrWhiteSpace([string]$payload.conversation_id)) {
     'unknown'
