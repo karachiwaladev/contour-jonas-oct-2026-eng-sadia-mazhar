@@ -65,6 +65,24 @@ if ($branch -in @('main', 'master', 'HEAD')) {
   Write-Output '{}'
   exit 0
 }
+if ($branch -notmatch '^factory/issue-\d+-[A-Za-z0-9][A-Za-z0-9._-]*$') {
+  Write-FactoryLog @{ action = 'skipped_invalid_factory_branch'; branch = $branch }
+  Write-Output '{}'
+  exit 0
+}
+
+$expectedRepository = 'karachiwaladev/contour-jonas-oct-2026-eng-sadia-mazhar'
+$origin = (git remote get-url origin 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or
+    $origin -notmatch '(?i)(?:github\.com[/:])([^/:\s]+/[^/\s]+?)(?:\.git)?$' -or
+    $Matches[1] -ne $expectedRepository) {
+  Write-FactoryLog @{
+    action = 'skipped_untrusted_origin'
+    expected_repository = $expectedRepository
+  }
+  Write-Output '{}'
+  exit 0
+}
 
 $porcelain = git status --porcelain 2>&1
 if ([string]::IsNullOrWhiteSpace($porcelain)) {
@@ -87,6 +105,19 @@ $msg = "factory-loop: deliver work on agent stop ($status)"
 git commit -m $msg
 if ($LASTEXITCODE -ne 0) {
   Write-FactoryLog @{ action = 'commit_failed'; message = $msg }
+  Write-Output '{}'
+  exit 0
+}
+
+$securityGate = Join-Path $root '.cursor/tools/check-loop-security.ps1'
+& powershell -NoProfile -ExecutionPolicy Bypass -File $securityGate `
+  -Root $root *> $null
+if ($LASTEXITCODE -ne 0) {
+  Write-FactoryLog @{
+    action = 'push_deferred_security_review'
+    message = $msg
+    reason = 'security-review evidence missing, invalid, or stale'
+  }
   Write-Output '{}'
   exit 0
 }

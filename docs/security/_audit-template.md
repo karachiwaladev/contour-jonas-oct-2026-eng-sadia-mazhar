@@ -7,6 +7,9 @@
 - Included paths/assets:
 - Exclusions:
 - Change/release:
+- Diff hash:
+- Security-review result: Not run
+- Blocking findings:
 - Time limit:
 - Cost cap:
 - External targets authorized: None
