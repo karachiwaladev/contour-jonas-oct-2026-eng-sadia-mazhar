@@ -15,6 +15,13 @@ replace, Cursor security-review or human review.
 - **R5:** Every PR create/update requires passing security-review evidence bound to the current diff.
 - **R6:** Critical/High findings, scanner failure, stale evidence, secrets, or unexpected origin block delivery.
 - **R7:** Scan output and evidence never disclose matched secret or malicious payload values.
+- **R8:** Every quarantined ticket is reported as not done with rule/location,
+  implementation/PR state, and required human action.
+- **R9:** A factory tick resumes or advances work instead of emitting status-only
+  updates; genuine blockers are recorded with a required next action.
+- **R10:** Audit Markdown cannot authorize a push; the local gate requires a
+  machine-readable review receipt matching the current branch diff and every
+  passing push still requires explicit human approval.
 
 ## Preconditions and test data
 
@@ -42,6 +49,11 @@ replace, Cursor security-review or human review.
 | FSG-014 | R5, R6: Security-review failure | Subagent fails twice | Attempt delivery | Status Blocked; no success claim or push | Error handling | Planned | — |
 | FSG-015 | R6, R7: Potential secret in changed file | Synthetic token matching a rule | Run local gate | Blocked; output contains rule/path/line only | Security | Planned | — |
 | FSG-016 | R6: Unexpected origin | Isolated fixture with different origin | Invoke stop hook | Push refused and logged | Authorization | Passed | 2026-10-27: isolated repo in `.cursor/tests/factory-loop-security.Tests.ps1` |
+| FSG-017 | R8: Quarantined ticket reminder | Synthetic ticket #26 scan state, including premature completion claim | Run quarantine reporter | Still says ticket is not done, gives rule/location, no implementation/PR, and human action | Security | Passed | `.cursor/tests/factory-loop-security.Tests.ps1` |
+| FSG-018 | R9: Material tick progress | Pending synthetic loop tick | Record an advanced action | Progress closes the pending tick; next wake can distinguish completion from a stalled status-only tick | Workflow | Automated | `.cursor/tests/factory-loop-security.Tests.ps1` |
+| FSG-019 | R9: Exact blocker record | Ticket needs human approval | Record blocked progress without blocker, then with blocker | Missing blocker is rejected; exact blocker state is accepted | Validation | Automated | `.cursor/tests/factory-loop-security.Tests.ps1` |
+| FSG-020 | R10: Forged audit Markdown | Ticket branch lacks review receipt | Add audit prose claiming Passed and invoke push hook | Push remains denied | Security | Passed | `.cursor/tests/factory-loop-security.Tests.ps1` |
+| FSG-021 | R10: Current receipt and human gate | Actual review completed for current diff | Record receipt, invoke push hook, then edit code | Current receipt reaches `permission: ask`; never auto-allows; changed diff makes receipt stale | Integration | Automated | `.cursor/tests/factory-loop-security.Tests.ps1` |
 
 ## Assumptions / open questions
 

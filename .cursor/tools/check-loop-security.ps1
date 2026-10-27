@@ -3,35 +3,14 @@ param(
   [switch]$Json
 )
 
-# Deterministic local gate. Cursor security-review itself is run by the agent;
-# this script binds its validated evidence to the exact current branch diff.
+# Deterministic local gate. Cursor security-review itself is run by the agent.
+# Authorization comes from a machine-readable local review receipt, not audit
+# Markdown. This remains a workflow-integrity control, not a cryptographic trust
+# boundary; human PR approval and protected-branch checks are authoritative.
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::UTF8
 
-function Get-DiffHash {
-  param([string]$Base)
-  $diff = @(git -C $Root diff --binary $Base -- . `
-    ':(exclude)docs/security/audits/*' 2>$null)
-  if ($LASTEXITCODE -ne 0) { throw 'Could not compute branch diff.' }
-  $untracked = @(git -C $Root ls-files --others --exclude-standard)
-  $parts = [Collections.Generic.List[string]]::new()
-  $parts.Add(($diff -join "`n"))
-  foreach ($relative in ($untracked | Sort-Object)) {
-    if (($relative -replace '\\', '/') -match '^docs/security/audits/') { continue }
-    $path = Join-Path $Root $relative
-    if (Test-Path -LiteralPath $path -PathType Leaf) {
-      $hash = (git -C $Root hash-object -- $relative 2>$null)
-      $parts.Add("untracked:$relative`:$hash")
-    }
-  }
-  $bytes = [Text.Encoding]::UTF8.GetBytes(($parts -join "`n"))
-  $sha = [Security.Cryptography.SHA256]::Create()
-  try {
-    return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
-  } finally {
-    $sha.Dispose()
-  }
-}
+. (Join-Path $Root '.cursor/tools/factory-security-common.ps1')
 
 function Test-ChangedFilesForSecrets {
   param([string]$Base)
@@ -68,38 +47,35 @@ function Test-ChangedFilesForSecrets {
 }
 
 try {
-  $branch = (git -C $Root rev-parse --abbrev-ref HEAD 2>$null).Trim()
-  if ($branch -notmatch '^factory/issue-(\d+)-') {
-    throw 'Current branch is not factory/issue-<n>-<slug>.'
-  }
-  $issue = $Matches[1]
-  $default = (git -C $Root symbolic-ref refs/remotes/origin/HEAD 2>$null) `
-    -replace '^refs/remotes/origin/', ''
-  if ([string]::IsNullOrWhiteSpace($default)) { $default = 'main' }
-  $base = "origin/$default"
-  $diffHash = Get-DiffHash -Base $base
+  $context = Get-FactoryBranchContext -Root $Root
+  $branch = $context.branch
+  $issue = $context.issue
+  $base = $context.base
+  $diffHash = $context.diff_hash
   $secretHits = @(Test-ChangedFilesForSecrets -Base $base)
 
-  $audit = Get-ChildItem -LiteralPath (Join-Path $Root 'docs/security/audits') `
-    -Filter "*issue-$issue*.md" -File -ErrorAction SilentlyContinue |
-    Sort-Object LastWriteTimeUtc -Descending |
-    Select-Object -First 1
-
   $reviewPassed = $false
-  $evidenceReason = 'security-review evidence missing'
-  if ($audit) {
-    $content = Get-Content -LiteralPath $audit.FullName -Raw -Encoding utf8
-    $hasHash = $content -match "(?im)^\s*-\s*Diff hash\s*:\s*$([regex]::Escape($diffHash))\s*$"
-    $hasResult = $content -match '(?im)^\s*-\s*Security-review result\s*:\s*Passed\s*$'
-    $hasNoBlockers = $content -match '(?im)^\s*-\s*Blocking findings\s*:\s*0\s*$'
-    if ($hasHash -and $hasResult -and $hasNoBlockers) {
-      & powershell -NoProfile -ExecutionPolicy Bypass `
-        -File (Join-Path $Root '.cursor/tools/validate-security-audit.ps1') `
-        -Root $Root -Path $audit.FullName *> $null
-      $reviewPassed = $LASTEXITCODE -eq 0
-      if (-not $reviewPassed) { $evidenceReason = 'security-review evidence failed validation' }
-    } else {
-      $evidenceReason = 'security-review evidence does not match current diff'
+  $evidenceReason = 'machine-readable security-review receipt missing'
+  $receiptPath = Join-Path $Root ".cursor/hooks/state/security-reviews/issue-$issue.json"
+  $receipt = $null
+  if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
+    try {
+      $receipt = Get-Content -LiteralPath $receiptPath -Raw -Encoding utf8 |
+        ConvertFrom-Json
+      $validSchema = [int]$receipt.schema_version -eq 1 -and
+        [string]$receipt.source -eq 'cursor-security-review' -and
+        [string]$receipt.review_id -match '^[A-Za-z0-9-]{8,}$'
+      $matchesDiff = [string]$receipt.issue -eq [string]$issue -and
+        [string]$receipt.branch -eq [string]$branch -and
+        [string]$receipt.diff_hash -eq [string]$diffHash
+      $passedResult = [string]$receipt.result -eq 'Passed' -and
+        [int]$receipt.blocking_findings -eq 0
+      $reviewPassed = $validSchema -and $matchesDiff -and $passedResult
+      if (-not $reviewPassed) {
+        $evidenceReason = 'security-review receipt is invalid, blocked, or stale'
+      }
+    } catch {
+      $evidenceReason = 'security-review receipt is unreadable'
     }
   }
   if ($secretHits.Count) { $evidenceReason = 'potential secret material detected' }
@@ -110,8 +86,9 @@ try {
     branch = $branch
     diff_hash = $diffHash
     status = $status
-    review_evidence = if ($audit) { $audit.FullName.Substring($Root.TrimEnd('\').Length + 1) } else { $null }
-    reason = if ($status -eq 'passed') { 'validated evidence matches current diff' } else { $evidenceReason }
+    review_id = if ($receipt) { [string]$receipt.review_id } else { $null }
+    review_receipt = if ($receipt) { ".cursor/hooks/state/security-reviews/issue-$issue.json" } else { $null }
+    reason = if ($status -eq 'passed') { 'review receipt matches current diff' } else { $evidenceReason }
     secret_findings = @($secretHits)
     checked_at = [DateTime]::UtcNow.ToString('o')
   }

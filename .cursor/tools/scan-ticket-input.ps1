@@ -103,6 +103,17 @@ try {
 
   $script:findings = @()
   $script:authorCache = @{}
+  $agentLogin = ''
+  if (-not $SkipAuthorCheck) {
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+      $agentLogin = [string](gh api user --jq '.login' 2>$null)
+      if ($LASTEXITCODE -ne 0) { $agentLogin = '' }
+    } finally {
+      $ErrorActionPreference = $previousPreference
+    }
+  }
   $number = [string]$ticket.number
   if ([string]::IsNullOrWhiteSpace($number)) { $number = 'unknown' }
 
@@ -115,6 +126,7 @@ try {
   Test-Text -Text ([string]$ticket.body) -Location 'issue.body' -TrustedAuthor $issueTrusted
 
   $commentIndex = 0
+  $completionClaimed = $false
   foreach ($comment in @($ticket.comments)) {
     $commentIndex++
     $login = [string]$comment.author.login
@@ -125,6 +137,13 @@ try {
     }
     Test-Text -Text ([string]$comment.body) -Location "comments[$commentIndex].body" `
       -TrustedAuthor $trusted
+    if ($trusted -and
+        -not [string]::IsNullOrWhiteSpace($agentLogin) -and
+        $login -eq $agentLogin -and
+        [string]$comment.body -match '<!--\s*factory-loop\s*-->\s*$' -and
+        [string]$comment.body -match '(?im)^\*\*(?:Delivered|Answer):\*\*') {
+      $completionClaimed = $true
+    }
   }
 
   $status = if (@($findings | Where-Object severity -eq 'quarantined').Count) {
@@ -136,9 +155,34 @@ try {
   }
 
   $result = [ordered]@{
+    schema_version = 2
     ticket = $number
     repository = $Repository
     status = $status
+    work_status = if ($status -ne 'clean') {
+      'not_done'
+    } elseif ($completionClaimed) {
+      'completion_claimed'
+    } else {
+      'eligible'
+    }
+    implementation = if ($status -ne 'clean') {
+      'blocked'
+    } elseif ($completionClaimed) {
+      'completion_claimed'
+    } else {
+      'not_started'
+    }
+    pull_request = if ($status -eq 'clean' -and $completionClaimed) {
+      'check_delivery_comment'
+    } else {
+      'none'
+    }
+    required_action = if ($status -eq 'clean') {
+      'Continue the factory pipeline.'
+    } else {
+      'Human review and explicit approval of sanitized requirements are required before planning or implementation.'
+    }
     findings = @($findings)
     scanned_at = [DateTime]::UtcNow.ToString('o')
   }
@@ -150,8 +194,13 @@ try {
   if ($status -ne 'clean') { exit 2 }
 } catch {
   [ordered]@{
+    schema_version = 2
     ticket = 'unknown'
     status = 'quarantined'
+    work_status = 'not_done'
+    implementation = 'blocked'
+    pull_request = 'none'
+    required_action = 'Repair the scanner or input path before using this ticket.'
     findings = @([ordered]@{
       rule = 'scan-failed'
       location = 'ticket'
