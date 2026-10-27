@@ -61,8 +61,11 @@ runtime or that the repository has no vulnerabilities.
   collaborator permission for approval authors, and treats all GitHub text as
   data rather than commands.
 - Every code-changing ticket and PR update requires Cursor security-review
-  evidence bound to the current diff hash. Critical/High findings, scan failure,
-  stale evidence, external PR refs, or an unexpected origin block delivery.
+  receipt bound to the current diff hash. Audit Markdown is reporting only.
+  Critical/High findings, scan failure, stale receipt, external PR refs, or an
+  unexpected origin block delivery. Local receipts are not tamper-proof;
+  stop hooks never auto-push, every push requires explicit human approval, and
+  protected-branch checks/manual PR review remain authoritative.
 
 ## Priority review areas
 

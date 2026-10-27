@@ -1,4 +1,6 @@
-# Cursor stop/sessionEnd: safe commit + push when factory-loop left the repo dirty.
+# Cursor stop/sessionEnd: safe local commit when factory-loop left the repo
+# dirty. Legacy filename retained for hook compatibility; this script never
+# pushes.
 $ErrorActionPreference = 'Stop'
 [Console]::InputEncoding = [Text.UTF8Encoding]::UTF8
 [Console]::OutputEncoding = [Text.UTF8Encoding]::UTF8
@@ -116,19 +118,19 @@ if ($LASTEXITCODE -ne 0) {
   Write-FactoryLog @{
     action = 'push_deferred_security_review'
     message = $msg
-    reason = 'security-review evidence missing, invalid, or stale'
+    reason = 'security-review receipt missing, invalid, blocked, or stale'
   }
   Write-Output '{}'
   exit 0
 }
 
-git push -u origin $branch
-if ($LASTEXITCODE -ne 0) {
-  Write-FactoryLog @{ action = 'push_failed'; message = $msg }
-  Write-Output '{}'
-  exit 0
+Write-FactoryLog @{
+  action = 'commit_ready_for_approved_push'
+  message = $msg
+  branch = $branch
+  files = ($staged -split "`n")
 }
-
-Write-FactoryLog @{ action = 'commit_push_ok'; message = $msg; files = ($staged -split "`n") }
-Write-Output '{}'
+Write-Output (@{
+  followup_message = "Factory-loop committed reviewed changes on '$branch' but did not auto-push. Ask the user to approve the exact git push; the before-push hook will revalidate the current receipt and show the native approval gate."
+} | ConvertTo-Json -Compress)
 exit 0

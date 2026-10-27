@@ -36,11 +36,18 @@ try {
   if ($LASTEXITCODE -ne 0) {
     Write-Output (@{
       permission = 'deny'
-      user_message = 'Factory-loop push blocked: security-review evidence is missing, invalid, stale, or has blocking findings.'
-      agent_message = 'Run the mandatory review, record current-diff evidence, validate it, then retry.'
+      user_message = 'Factory-loop push blocked: machine-readable security-review receipt is missing, invalid, stale, or has blocking findings.'
+      agent_message = 'Run the mandatory review, record its current-diff receipt with record-security-review.ps1, then retry. Audit Markdown cannot authorize a push.'
     } | ConvertTo-Json -Compress)
     exit 0
   }
+
+  Write-Output (@{
+    permission = 'ask'
+    user_message = "Factory-loop review receipt matches the current diff on branch '$branch'. Approve this exact push to the verified origin?"
+    agent_message = 'A local receipt is not tamper-proof. Push only after explicit human approval; PR review remains mandatory.'
+  } | ConvertTo-Json -Compress)
+  exit 0
 } catch {
   Write-Output (@{
     permission = 'deny'

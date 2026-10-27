@@ -39,6 +39,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/tools/validate-secur
 
 The validator checks documentation structure and evidence presence. It cannot
 confirm exploitability, severity, remediation, or whether a test truly passed.
+Audit Markdown is reporting evidence only. It never authorizes a factory push;
+the local push gate reads the machine-readable current-diff receipt under
+`.cursor/hooks/state/security-reviews/`. That receipt is still a local
+workflow-integrity control, not tamper-proof attestation. Human PR approval and
+protected-branch checks remain the authoritative delivery boundary. Stop hooks
+never auto-push, and a passing local receipt still returns a human approval
+prompt before remote publication.
 
 ## Safety
 
